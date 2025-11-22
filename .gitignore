@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+package-lock.json
+
+# CDK
+cdk.out/
+manifest.json
+tree.json
+.cdk.staging/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+.DS_Store
