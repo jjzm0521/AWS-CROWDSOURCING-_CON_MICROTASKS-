@@ -49,6 +49,8 @@ export class BackendStack extends cdk.Stack {
         TASKS_TABLE: props.tasksTable.tableName,
         ASSIGNMENTS_TABLE: props.assignmentsTable.tableName,
         SUBMISSIONS_TABLE: props.submissionsTable.tableName,
+        WALLETS_TABLE: props.walletsTable.tableName,
+        TRANSACTIONS_TABLE: props.transactionsTable.tableName,
         AVAILABLE_TASKS_QUEUE_URL: props.availableTasksQueue.queueUrl,
     };
 
@@ -142,6 +144,36 @@ export class BackendStack extends cdk.Stack {
         filters: [
             lambda.FilterCriteria.filter({
                 eventName: lambda.FilterRule.isEqual('INSERT'),
+            }),
+        ],
+    }));
+
+    // --- Payment Handlers ---
+
+    // Process Payment
+    const processPaymentLambda = new lambda.Function(this, 'ProcessPaymentLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.payments.process_payment.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.tasksTable.grantReadData(processPaymentLambda);
+    props.walletsTable.grantReadWriteData(processPaymentLambda);
+    props.transactionsTable.grantWriteData(processPaymentLambda);
+
+    // Trigger Payment on Submissions Table Modify (Status -> Approved)
+    processPaymentLambda.addEventSource(new lambdaEventSources.DynamoEventSource(props.submissionsTable, {
+        startingPosition: lambda.StartingPosition.TRIM_HORIZON,
+        batchSize: 1,
+        filters: [
+            lambda.FilterCriteria.filter({
+                eventName: lambda.FilterRule.isEqual('MODIFY'),
+                dynamodb: {
+                    NewImage: {
+                        status: { S: ['Approved'] } // Only if new status is Approved
+                    }
+                }
             }),
         ],
     }));
