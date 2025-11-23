@@ -3,8 +3,7 @@ import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-
-export class StorageStack extends cdk.Stack {
+import * as iam from 'aws-cdk-lib/aws-iam';
   public readonly frontendBucket: s3.Bucket;
   public readonly taskAssetsBucket: s3.Bucket;
   public readonly resultsExportsBucket: s3.Bucket;
