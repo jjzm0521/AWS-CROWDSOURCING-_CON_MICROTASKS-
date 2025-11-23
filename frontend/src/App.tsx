@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Amplify } from 'aws-amplify';
 import { get } from 'aws-amplify/api';
 import { Authenticator } from '@aws-amplify/ui-react';
-import '@aws-amplify/ui-react/dist/styles.css';
+import '@aws-amplify/ui-react/styles.css';
 import awsExports from './aws-exports';
 import { WorkerDashboard } from './components/WorkerDashboard';
 import { TaskWorkspace } from './components/TaskWorkspace';
