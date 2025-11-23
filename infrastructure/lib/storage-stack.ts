@@ -51,6 +51,12 @@ export class StorageStack extends cdk.Stack {
       description: 'The URL of the web application',
     });
 
+    // Output the Distribution ID
+    new cdk.CfnOutput(this, 'DistributionId', {
+      value: distribution.distributionId,
+      description: 'The ID of the CloudFront distribution',
+    });
+
     // Task Assets Bucket
     this.taskAssetsBucket = new s3.Bucket(this, 'TaskAssetsBucket', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
