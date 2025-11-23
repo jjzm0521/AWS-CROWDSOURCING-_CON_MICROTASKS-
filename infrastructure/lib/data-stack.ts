@@ -43,6 +43,7 @@ export class DataStack extends cdk.Stack {
     this.submissionsTable = new dynamodb.Table(this, 'SubmissionsTable', {
       partitionKey: { name: 'submissionId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      stream: dynamodb.StreamViewType.NEW_IMAGE,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 

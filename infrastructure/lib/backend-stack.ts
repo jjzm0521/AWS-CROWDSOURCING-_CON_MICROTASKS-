@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
@@ -118,6 +119,32 @@ export class BackendStack extends cdk.Stack {
     props.tasksTable.grantReadWriteData(submitWorkLambda);
     props.assignmentsTable.grantReadWriteData(submitWorkLambda);
     props.submissionsTable.grantWriteData(submitWorkLambda);
+
+    // --- QC Handlers ---
+
+    // Validate Submission
+    const validateSubmissionLambda = new lambda.Function(this, 'ValidateSubmissionLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.qc.validate_submission.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.tasksTable.grantReadData(validateSubmissionLambda);
+    props.submissionsTable.grantWriteData(validateSubmissionLambda);
+
+    // Trigger on Submissions Table Insert
+    validateSubmissionLambda.addEventSource(new lambdaEventSources.DynamoEventSource(props.submissionsTable, {
+        startingPosition: lambda.StartingPosition.TRIM_HORIZON,
+        batchSize: 5,
+        bisectBatchOnError: true,
+        retryAttempts: 2,
+        filters: [
+            lambda.FilterCriteria.filter({
+                eventName: lambda.FilterRule.isEqual('INSERT'),
+            }),
+        ],
+    }));
 
     // --- API Routes ---
 
