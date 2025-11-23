@@ -46,6 +46,8 @@ export class BackendStack extends cdk.Stack {
     // Shared Environment
     const sharedEnv = {
         TASKS_TABLE: props.tasksTable.tableName,
+        ASSIGNMENTS_TABLE: props.assignmentsTable.tableName,
+        SUBMISSIONS_TABLE: props.submissionsTable.tableName,
         AVAILABLE_TASKS_QUEUE_URL: props.availableTasksQueue.queueUrl,
     };
 
@@ -94,6 +96,29 @@ export class BackendStack extends cdk.Stack {
 
     props.tasksTable.grantReadData(listAvailableTasksLambda);
 
+    // Assign Task (Worker)
+    const assignTaskLambda = new lambda.Function(this, 'AssignTaskLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.tasks.assign_task.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.tasksTable.grantReadWriteData(assignTaskLambda);
+    props.assignmentsTable.grantWriteData(assignTaskLambda);
+
+    // Submit Work (Worker)
+    const submitWorkLambda = new lambda.Function(this, 'SubmitWorkLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.submissions.submit_work.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.tasksTable.grantReadWriteData(submitWorkLambda);
+    props.assignmentsTable.grantReadWriteData(submitWorkLambda);
+    props.submissionsTable.grantWriteData(submitWorkLambda);
+
     // --- API Routes ---
 
     const requesterResource = api.root.addResource('requester');
@@ -123,6 +148,20 @@ export class BackendStack extends cdk.Stack {
     // GET /worker/tasks
     workerTasksResource.addMethod('GET', new apigateway.LambdaIntegration(listAvailableTasksLambda), {
       authorizer: workerAuthorizer,
+    });
+
+    const workerTaskItemResource = workerTasksResource.addResource('{taskId}');
+
+    // POST /worker/tasks/{taskId}/assign
+    const assignResource = workerTaskItemResource.addResource('assign');
+    assignResource.addMethod('POST', new apigateway.LambdaIntegration(assignTaskLambda), {
+        authorizer: workerAuthorizer,
+    });
+
+    // POST /worker/tasks/{taskId}/submit
+    const submitResource = workerTaskItemResource.addResource('submit');
+    submitResource.addMethod('POST', new apigateway.LambdaIntegration(submitWorkLambda), {
+        authorizer: workerAuthorizer,
     });
 
   }
