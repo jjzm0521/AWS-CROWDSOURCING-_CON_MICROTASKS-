@@ -1,19 +1,18 @@
-const awsExports = {
-  // TODO: Replace with actual values from CDK output after deployment
+const awsConfig = {
   Auth: {
-    region: "us-east-1",
-    userPoolId: "us-east-1_PLACEHOLDER",
-    userPoolWebClientId: "PLACEHOLDER",
+    Cognito: {
+      userPoolId: "us-east-1_PLACEHOLDER",
+      userPoolClientId: "PLACEHOLDER",
+    }
   },
   API: {
-    endpoints: [
-      {
-        name: "CrowdsourcingApi",
+    REST: {
+      CrowdsourcingApi: {
         endpoint: "https://PLACEHOLDER.execute-api.us-east-1.amazonaws.com/prod",
-        region: "us-east-1",
-      },
-    ],
-  },
+        region: "us-east-1"
+      }
+    }
+  }
 };
 
-export default awsExports;
+export default awsConfig;
