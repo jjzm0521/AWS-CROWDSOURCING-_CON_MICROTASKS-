@@ -26,3 +26,5 @@ venv/
 
 # Misc
 .DS_Store
+infrastructure/**/*.js
+infrastructure/**/*.d.ts
