@@ -1,6 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 
 export class StorageStack extends cdk.Stack {
   public readonly frontendBucket: s3.Bucket;
@@ -13,10 +15,41 @@ export class StorageStack extends cdk.Stack {
     // Frontend Bucket
     this.frontendBucket = new s3.Bucket(this, 'FrontendBucket', {
       websiteIndexDocument: 'index.html',
-      publicReadAccess: true, // WARNING: For dev simplicity. In prod use CloudFront OAI.
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS, // Allow bucket policies
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Secure: No public access
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+    });
+
+    // Origin Access Identity to allow CloudFront to read from the S3 bucket
+    const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OAI');
+    this.frontendBucket.grantRead(originAccessIdentity);
+
+    // CloudFront Distribution
+    const distribution = new cloudfront.Distribution(this, 'FrontendDistribution', {
+      defaultBehavior: {
+        origin: new origins.S3Origin(this.frontendBucket, { originAccessIdentity }),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+      defaultRootObject: 'index.html',
+      // Handle Single Page Application routing
+      errorResponses: [
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: '/index.html',
+        },
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: '/index.html',
+        },
+      ],
+    });
+
+    // Output the CloudFront URL
+    new cdk.CfnOutput(this, 'WebAppURL', {
+      value: `https://${distribution.distributionDomainName}`,
+      description: 'The URL of the web application',
     });
 
     // Task Assets Bucket
@@ -26,7 +59,7 @@ export class StorageStack extends cdk.Stack {
       cors: [
         {
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST],
-          allowedOrigins: ['*'],
+          allowedOrigins: ['*'], // In production, restrict this to the CloudFront domain
           allowedHeaders: ['*'],
         },
       ],
@@ -34,8 +67,8 @@ export class StorageStack extends cdk.Stack {
 
     // Results Exports Bucket
     this.resultsExportsBucket = new s3.Bucket(this, 'ResultsExportsBucket', {
-        removalPolicy: cdk.RemovalPolicy.DESTROY,
-        autoDeleteObjects: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
     });
   }
 }
