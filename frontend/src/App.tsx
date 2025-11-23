@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Amplify } from 'aws-amplify';
+import { get } from 'aws-amplify/api';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import awsExports from './aws-exports';
@@ -12,13 +13,47 @@ Amplify.configure(awsExports);
 
 type ViewMode = 'worker' | 'requester';
 
-function App() {
+const Dashboard = ({ user, signOut }: { user: any, signOut: any }) => {
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('worker');
+  const [balance, setBalance] = useState<number | null>(null);
+
+  const fetchBalance = async () => {
+    try {
+        // Try Requester first
+        try {
+            const restOperation = get({
+                apiName: 'CrowdsourcingApi',
+                path: '/requester/wallet'
+            });
+            const response = await restOperation.response;
+            const data: any = await response.body.json();
+            setBalance(data.balance);
+            return;
+        } catch (e) {
+            // Ignore
+        }
+
+        // Try Worker
+        const restOperation = get({
+            apiName: 'CrowdsourcingApi',
+            path: '/worker/wallet'
+        });
+        const response = await restOperation.response;
+        const data: any = await response.body.json();
+        setBalance(data.balance);
+    } catch (error) {
+        console.error('Error fetching wallet:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+        fetchBalance();
+    }
+  }, [user]);
 
   return (
-    <Authenticator>
-      {({ signOut, user }) => (
         <div className="min-h-screen bg-gray-50">
           {/* Header */}
           <header className="bg-white border-b sticky top-0 z-10">
@@ -58,6 +93,9 @@ function App() {
               </div>
 
               <div className="flex items-center space-x-4">
+                <span className="text-sm font-bold text-green-600 mr-4">
+                    {balance !== null ? `Balance: $${balance}` : ''}
+                </span>
                 <span className="text-sm text-gray-600">Hola, {user?.username}</span>
                 <button
                   onClick={signOut}
@@ -79,11 +117,22 @@ function App() {
               <TaskWorkspace
                 task={selectedTask}
                 onBack={() => setSelectedTask(null)}
-                onComplete={() => setSelectedTask(null)}
+                onComplete={() => {
+                    setSelectedTask(null);
+                    fetchBalance();
+                }}
               />
             )}
           </main>
         </div>
+  );
+};
+
+function App() {
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <Dashboard user={user} signOut={signOut} />
       )}
     </Authenticator>
   );

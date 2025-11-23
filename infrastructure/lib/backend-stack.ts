@@ -178,6 +178,18 @@ export class BackendStack extends cdk.Stack {
         ],
     }));
 
+    // --- Wallet Handlers ---
+
+    // Get Wallet
+    const getWalletLambda = new lambda.Function(this, 'GetWalletLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.wallet.get_wallet.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.walletsTable.grantReadData(getWalletLambda);
+
     // --- API Routes ---
 
     const requesterResource = api.root.addResource('requester');
@@ -201,12 +213,24 @@ export class BackendStack extends cdk.Stack {
       authorizer: requesterAuthorizer,
     });
 
+    // GET /requester/wallet
+    const requesterWalletResource = requesterResource.addResource('wallet');
+    requesterWalletResource.addMethod('GET', new apigateway.LambdaIntegration(getWalletLambda), {
+        authorizer: requesterAuthorizer,
+    });
+
     const workerResource = api.root.addResource('worker');
     const workerTasksResource = workerResource.addResource('tasks');
 
     // GET /worker/tasks
     workerTasksResource.addMethod('GET', new apigateway.LambdaIntegration(listAvailableTasksLambda), {
       authorizer: workerAuthorizer,
+    });
+
+    // GET /worker/wallet
+    const workerWalletResource = workerResource.addResource('wallet');
+    workerWalletResource.addMethod('GET', new apigateway.LambdaIntegration(getWalletLambda), {
+        authorizer: workerAuthorizer,
     });
 
     const workerTaskItemResource = workerTasksResource.addResource('{taskId}');
