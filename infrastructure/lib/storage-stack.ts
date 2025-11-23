@@ -3,8 +3,7 @@ import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-
-export class StorageStack extends cdk.Stack {
+import * as iam from 'aws-cdk-lib/aws-iam';
   public readonly frontendBucket: s3.Bucket;
   public readonly taskAssetsBucket: s3.Bucket;
   public readonly resultsExportsBucket: s3.Bucket;
@@ -14,7 +13,6 @@ export class StorageStack extends cdk.Stack {
 
     // Frontend Bucket
     this.frontendBucket = new s3.Bucket(this, 'FrontendBucket', {
-      websiteIndexDocument: 'index.html',
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Secure: No public access
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
@@ -50,6 +48,12 @@ export class StorageStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'WebAppURL', {
       value: `https://${distribution.distributionDomainName}`,
       description: 'The URL of the web application',
+    });
+
+    // Output the Distribution ID
+    new cdk.CfnOutput(this, 'DistributionId', {
+      value: distribution.distributionId,
+      description: 'The ID of the CloudFront distribution',
     });
 
     // Task Assets Bucket
