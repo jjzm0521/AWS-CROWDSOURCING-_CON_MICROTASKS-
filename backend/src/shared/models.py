@@ -36,3 +36,5 @@ class SubmissionStatus:
     PENDING = "Pending"
     APPROVED = "Approved"
     REJECTED = "Rejected"
+    DISPUTED = "Disputed"
+    REJECTED_FINAL = "RejectedFinal"

@@ -50,6 +50,8 @@ export class BackendStack extends cdk.Stack {
         ASSIGNMENTS_TABLE: props.assignmentsTable.tableName,
         SUBMISSIONS_TABLE: props.submissionsTable.tableName,
         WALLETS_TABLE: props.walletsTable.tableName,
+        WORKERS_TABLE: props.workersTable.tableName,
+        DISPUTES_TABLE: props.disputesTable.tableName,
         TRANSACTIONS_TABLE: props.transactionsTable.tableName,
         AVAILABLE_TASKS_QUEUE_URL: props.availableTasksQueue.queueUrl,
     };
@@ -190,6 +192,30 @@ export class BackendStack extends cdk.Stack {
 
     props.walletsTable.grantReadData(getWalletLambda);
 
+    // --- Disputes Handlers ---
+
+    // Start Dispute (Worker)
+    const startDisputeLambda = new lambda.Function(this, 'StartDisputeLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.disputes.start_dispute.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.submissionsTable.grantReadWriteData(startDisputeLambda);
+    props.disputesTable.grantWriteData(startDisputeLambda);
+
+    // Resolve Dispute (Admin)
+    const resolveDisputeLambda = new lambda.Function(this, 'ResolveDisputeLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.disputes.resolve_dispute.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.disputesTable.grantReadWriteData(resolveDisputeLambda);
+    props.submissionsTable.grantWriteData(resolveDisputeLambda);
+
     // --- API Routes ---
 
     const requesterResource = api.root.addResource('requester');
@@ -245,6 +271,23 @@ export class BackendStack extends cdk.Stack {
     const submitResource = workerTaskItemResource.addResource('submit');
     submitResource.addMethod('POST', new apigateway.LambdaIntegration(submitWorkLambda), {
         authorizer: workerAuthorizer,
+    });
+
+    // POST /worker/disputes
+    const workerDisputesResource = workerResource.addResource('disputes');
+    workerDisputesResource.addMethod('POST', new apigateway.LambdaIntegration(startDisputeLambda), {
+        authorizer: workerAuthorizer,
+    });
+
+    const adminResource = api.root.addResource('admin');
+    const adminDisputesResource = adminResource.addResource('disputes');
+    const adminDisputeItemResource = adminDisputesResource.addResource('{disputeId}');
+    const resolveResource = adminDisputeItemResource.addResource('resolve');
+
+    // POST /admin/disputes/{disputeId}/resolve
+    // Using requesterAuthorizer for admin actions for now
+    resolveResource.addMethod('POST', new apigateway.LambdaIntegration(resolveDisputeLambda), {
+        authorizer: requesterAuthorizer,
     });
 
   }
