@@ -84,6 +84,16 @@ export class BackendStack extends cdk.Stack {
 
     props.tasksTable.grantReadData(listTasksLambda);
 
+    // List Available Tasks (Worker)
+    const listAvailableTasksLambda = new lambda.Function(this, 'ListAvailableTasksLambda', {
+      runtime: lambda.Runtime.PYTHON_3_12,
+      handler: 'handlers.tasks.list_available_tasks.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+      environment: sharedEnv,
+    });
+
+    props.tasksTable.grantReadData(listAvailableTasksLambda);
+
     // --- API Routes ---
 
     const requesterResource = api.root.addResource('requester');
@@ -105,6 +115,14 @@ export class BackendStack extends cdk.Stack {
     // GET /requester/tasks
     tasksResource.addMethod('GET', new apigateway.LambdaIntegration(listTasksLambda), {
       authorizer: requesterAuthorizer,
+    });
+
+    const workerResource = api.root.addResource('worker');
+    const workerTasksResource = workerResource.addResource('tasks');
+
+    // GET /worker/tasks
+    workerTasksResource.addMethod('GET', new apigateway.LambdaIntegration(listAvailableTasksLambda), {
+      authorizer: workerAuthorizer,
     });
 
   }

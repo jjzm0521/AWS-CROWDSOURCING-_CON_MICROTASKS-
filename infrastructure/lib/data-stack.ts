@@ -33,6 +33,12 @@ export class DataStack extends cdk.Stack {
       partitionKey: { name: 'batchId', type: dynamodb.AttributeType.STRING },
     });
 
+    this.tasksTable.addGlobalSecondaryIndex({
+      indexName: 'StatusIndex',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // Submissions Table
     this.submissionsTable = new dynamodb.Table(this, 'SubmissionsTable', {
       partitionKey: { name: 'submissionId', type: dynamodb.AttributeType.STRING },
