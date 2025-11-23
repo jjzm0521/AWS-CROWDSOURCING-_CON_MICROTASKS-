@@ -14,7 +14,6 @@ export class StorageStack extends cdk.Stack {
 
     // Frontend Bucket
     this.frontendBucket = new s3.Bucket(this, 'FrontendBucket', {
-      websiteIndexDocument: 'index.html',
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL, // Secure: No public access
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
