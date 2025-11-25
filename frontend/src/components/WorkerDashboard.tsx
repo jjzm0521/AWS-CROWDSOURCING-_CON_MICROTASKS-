@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { get } from 'aws-amplify/api';
-import { Clock } from 'lucide-react';
+import { Briefcase, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Task {
   taskId: string;
   type: string;
-  payload: any;
+  payload: {
+    instructions: string;
+    // Agregamos otros campos que podrían venir en el payload
+    [key: string]: any;
+  };
   status: string;
-  reward?: number; // Asumiendo que agregaremos reward luego
+  reward?: number;
 }
 
 interface WorkerDashboardProps {
@@ -41,39 +45,49 @@ export const WorkerDashboard: React.FC<WorkerDashboardProps> = ({ onSelectTask, 
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Cargando tareas disponibles...</div>;
+  if (loading) {
+    return <div className="p-8 text-center text-gray-500">Cargando tareas disponibles...</div>;
+  }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Tareas Disponibles</h2>
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+      <h2 className="text-3xl font-bold mb-8 text-gray-800">Tareas Disponibles</h2>
 
       {tasks.length === 0 ? (
-        <div className="bg-gray-100 p-8 rounded text-center">
-          <p>No hay tareas disponibles en este momento.</p>
+        <div className="text-center p-16 bg-white rounded-lg border-2 border-dashed">
+          <AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-700">No hay tareas disponibles</h3>
+          <p className="text-gray-500 mt-2">Vuelve a intentarlo más tarde.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tasks.map((task) => (
-            <div key={task.taskId} className="border rounded-lg p-4 shadow-sm hover:shadow-md transition bg-white">
-              <div className="flex justify-between items-start mb-2">
-                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded uppercase">
-                  {task.type}
+            <div
+              key={task.taskId}
+              className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-lg transition-shadow cursor-pointer group"
+              onClick={() => onSelectTask(task)}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full uppercase">
+                  {task.type.replace('-', ' ')}
                 </span>
-                <span className="text-gray-500 text-sm flex items-center">
-                  <Clock size={14} className="mr-1" /> 10 min
+                <span className="font-bold text-lg text-green-600">
+                  ${task.reward || '0.10'}
                 </span>
               </div>
 
-              <h3 className="font-semibold text-lg mb-2">Identificar objetos</h3>
-              <p className="text-gray-600 text-sm mb-4 truncate">
-                {JSON.stringify(task.payload)}
+              <h3 className="font-bold text-lg text-gray-800 mb-2 truncate group-hover:text-indigo-600">
+                {task.payload.instructions || 'Tarea de etiquetado'}
+              </h3>
+
+              <p className="text-gray-600 text-sm mb-6 h-10 overflow-hidden">
+                {task.payload.instructions || 'Ayúdanos a categorizar y verificar datos.'}
               </p>
 
               <button
-                onClick={() => onSelectTask(task)}
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition font-medium"
+                className="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition font-semibold flex items-center justify-center group-hover:scale-105"
               >
-                Ver Tarea
+                <CheckCircle size={18} className="mr-2" /> Empezar Tarea
               </button>
             </div>
           ))}

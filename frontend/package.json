@@ -48,5 +48,10 @@
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.1"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "\\\\.css$": "<rootDir>/__mocks__/styleMock.js"
+    }
   }
 }
