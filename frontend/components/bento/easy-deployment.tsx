@@ -25,26 +25,26 @@ const DeploymentEasy: React.FC<DeploymentEasyProps> = ({ width = "100%", height 
    * Console log output (static for demo) – can be replaced via props
    * ---------------------------------------------------------- */
   const logLines = [
-    "[16:37:25.637] Running build in Washington, D.C., USA (East) – iad1",
-    "[16:37:25.638] Build machine configuration: 2 cores, 8 GB",
-    "[16:37:25.653] Retrieving list of deployment files...",
-    "[16:37:25.741] Previous build caches not available",
-    "[16:37:25.979] Downloading 84 deployment files...",
-    '[16:37:29.945] Running "vercel build"',
-    "[16:37:30.561] Vercel CLI 44.5.0",
-    '[16:37:30.880] Running "install" command: `bun install`...',
-    "[16:37:30.914] bun install v1.2.19 (aad3abea)",
-    "[16:37:30.940] Resolving dependencies",
-    "[16:37:34.436] Resolved, downloaded and extracted [1116]",
-    '[16:37:34.436] warn: incorrect peer dependency "react@19.1.0"',
-    "[16:37:37.265] Saved lockfile",
-    "[16:37:39.076] Next.js anonymous telemetry notice",
-    "[16:37:39.137] ▲ Next.js 15.2.4",
-    "[16:37:41.439] ✓ Compiled successfully",
-    "[16:37:53.979] ✓ Generated static pages",
-    "[16:38:00.585] ○ (Static) prerendered as static content",
-    "[16:38:01.099] Build Completed in /vercel/output [30s]",
-    "🚀 Deployment complete – Easy!",
+    "[16:37:25.637] Starting deployment to AWS CloudFront",
+    "[16:37:25.638] Region: us-east-1 (N. Virginia)",
+    "[16:37:25.653] Uploading static assets to S3...",
+    "[16:37:25.741] Optimizing images and caching policies",
+    "[16:37:25.979] Invalidating CloudFront distribution...",
+    '[16:37:29.945] Running "aws s3 sync"',
+    "[16:37:30.561] AWS CLI v2.15.0",
+    '[16:37:30.880] Verifying SSL certificates...',
+    "[16:37:30.914] Certificate validated (ACM)",
+    "[16:37:30.940] Propagating to edge locations",
+    "[16:37:34.436] Edge locations updated: [142]",
+    '[16:37:34.436] Status: Deployed',
+    "[16:37:37.265] Domain mapped successfully",
+    "[16:37:39.076] WAF rules applied",
+    "[16:37:39.137] ▲ CloudFront Distribution Ready",
+    "[16:37:41.439] ✓ Content served via Edge",
+    "[16:37:53.979] ✓ Low latency enabled",
+    "[16:38:00.585] ○ (Static) content globally available",
+    "[16:38:01.099] Deployment Completed in [30s]",
+    "🚀 Deployed to AWS – Fast!",
   ]
 
   return (
@@ -58,7 +58,7 @@ const DeploymentEasy: React.FC<DeploymentEasyProps> = ({ width = "100%", height 
         ...themeVars,
       }}
       role="img"
-      aria-label="Deployment console output with Deploy on Vercel button"
+      aria-label="Deployment console output with Deploy on AWS button"
     >
       {/* -------------------------------------------------------- */}
       {/* Console / Terminal panel                                */}
@@ -149,7 +149,7 @@ const DeploymentEasy: React.FC<DeploymentEasyProps> = ({ width = "100%", height 
             "0px 42.075px 11.475px rgba(0, 0, 0, 0), 0px 26.775px 10.2px rgba(0, 0, 0, 0.01), 0px 15.3px 8.925px rgba(0, 0, 0, 0.05), 0px 6.375px 6.375px rgba(0, 0, 0, 0.09), 0px 1.275px 3.825px rgba(0, 0, 0, 0.1)",
         }}
       >
-        🚀 Deploy on Vercel
+        🚀 Deploy on AWS
       </button>
     </div>
   )

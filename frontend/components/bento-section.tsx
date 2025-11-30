@@ -13,7 +13,13 @@ import AutomatedPayments from "./bento/automated-payments"
 import DisputeResolution from "./bento/dispute-resolution"
 import PlatformInterface from "./bento/platform-interface" // Added platform interface component
 
-const BentoCard = ({ title, description, Component }) => (
+interface BentoCardProps {
+  title: string
+  description: string
+  Component: React.ComponentType<any>
+}
+
+const BentoCard = ({ title, description, Component }: BentoCardProps) => (
   <div className="overflow-hidden rounded-2xl border border-white/20 flex flex-col justify-start items-start relative">
     {/* Background with blur effect */}
     <div
@@ -69,8 +75,8 @@ export function BentoSection() {
       Component: ParallelCodingAgents, // Updated component
     },
     {
-      title: "Deployment made easy", // Swapped position
-      description: "Go from code to live deployment on Vercel instantly.",
+      title: "Despliegue sencillo en AWS", // Swapped position
+      description: "Pasa del código a producción en AWS CloudFront al instante.",
       Component: EasyDeployment,
     },
     {

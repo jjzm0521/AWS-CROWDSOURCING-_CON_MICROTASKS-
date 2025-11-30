@@ -15,12 +15,10 @@ export default function AmplifyProvider({
   children: React.ReactNode;
 }) {
   return (
-    <Authenticator>
-      {({ signOut, user }) => (
-        <div className="w-full min-h-screen">
-          {children}
-        </div>
-      )}
-    </Authenticator>
+    <Authenticator.Provider>
+      <div className="w-full min-h-screen">
+        {children}
+      </div>
+    </Authenticator.Provider>
   );
 }
