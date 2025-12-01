@@ -38,5 +38,14 @@ export class AuthStack extends cdk.Stack {
         userSrp: true,
       },
     });
+
+    // Export client IDs
+    new cdk.CfnOutput(this, 'RequesterUserPoolClientId', {
+      value: this.requesterUserPoolClient.userPoolClientId,
+    });
+
+    new cdk.CfnOutput(this, 'WorkerUserPoolClientId', {
+      value: this.workerUserPoolClient.userPoolClientId,
+    });
   }
 }
