@@ -9,22 +9,15 @@ import { BackendStack } from '../lib/backend-stack';
 
 const app = new cdk.App();
 
-// Define el entorno de AWS explícitamente para todos los stacks
-const env = {
-  account: process.env.CDK_DEFAULT_ACCOUNT,
-  region: process.env.CDK_DEFAULT_REGION,
-};
+const dataStack = new DataStack(app, 'CrowdsourcingDataStack', {});
 
-const dataStack = new DataStack(app, 'CrowdsourcingDataStack', { env });
+const authStack = new AuthStack(app, 'CrowdsourcingAuthStack', {});
 
-const authStack = new AuthStack(app, 'CrowdsourcingAuthStack', { env });
+const storageStack = new StorageStack(app, 'CrowdsourcingStorageStack', {});
 
-const storageStack = new StorageStack(app, 'CrowdsourcingStorageStack', { env });
-
-const queueStack = new QueueStack(app, 'CrowdsourcingQueueStack', { env });
+const queueStack = new QueueStack(app, 'CrowdsourcingQueueStack', {});
 
 new BackendStack(app, 'CrowdsourcingBackendStack', {
-  env, // Asegúrate de pasar el entorno aquí también
   tasksTable: dataStack.tasksTable,
   submissionsTable: dataStack.submissionsTable,
   assignmentsTable: dataStack.assignmentsTable,

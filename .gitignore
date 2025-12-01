@@ -10,6 +10,7 @@ tree.json
 .cdk.staging/
 
 # Python
+backend/src/dependencies/
 __pycache__/
 *.pyc
 *.pyo
@@ -28,6 +29,3 @@ venv/
 .DS_Store
 infrastructure/**/*.js
 infrastructure/**/*.d.ts
-
-# Backend dependencies
-backend/src/dependencies/

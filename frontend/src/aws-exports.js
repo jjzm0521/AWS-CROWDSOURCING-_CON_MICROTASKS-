@@ -1,17 +1,14 @@
-// Template for AWS Amplify configuration
-// Fill in the placeholders with your actual AWS resource details
-
 const awsConfig = {
   Auth: {
     Cognito: {
-      userPoolId: "REPLACE_WITH_USER_POOL_ID",
-      userPoolClientId: "REPLACE_WITH_WEB_CLIENT_ID",
+      userPoolId: "us-east-1_PLACEHOLDER",
+      userPoolClientId: "PLACEHOLDER",
     }
   },
   API: {
     REST: {
       CrowdsourcingApi: {
-        endpoint: "REPLACE_WITH_API_GATEWAY_URL",
+        endpoint: "https://PLACEHOLDER.execute-api.us-east-1.amazonaws.com/prod",
         region: "us-east-1"
       }
     }
