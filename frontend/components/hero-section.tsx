@@ -448,12 +448,12 @@ export function HeroSection() {
       </div>
 
       <div className="relative z-10 flex flex-col sm:flex-row gap-3 items-center justify-center">
-        <Link href="#" rel="noopener noreferrer">
+        <Link href="/dashboard/worker" rel="noopener noreferrer">
           <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90 px-8 py-3 rounded-full font-medium text-base shadow-lg ring-1 ring-white/10">
             Empezar como Worker
           </Button>
         </Link>
-        <Link href="#" rel="noopener noreferrer">
+        <Link href="/dashboard/requester" rel="noopener noreferrer">
           <Button
             variant="outline"
             className="border-border/60 text-foreground hover:bg-accent/20 px-8 py-3 rounded-full font-medium text-base bg-transparent"
