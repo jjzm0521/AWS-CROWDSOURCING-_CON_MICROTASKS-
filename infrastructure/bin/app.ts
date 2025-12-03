@@ -35,4 +35,5 @@ new BackendStack(app, 'CrowdsourcingBackendStack', {
   requesterUserPool: authStack.requesterUserPool,
   workerUserPool: authStack.workerUserPool,
   availableTasksQueue: queueStack.availableTasksQueue,
+  submissionQueue: queueStack.submissionQueue,
 });
