@@ -8,6 +8,7 @@ export class DataStack extends cdk.Stack {
   public readonly assignmentsTable: dynamodb.Table;
   public readonly walletsTable: dynamodb.Table;
   public readonly workersTable: dynamodb.Table;
+  public readonly requestersTable: dynamodb.Table;
   public readonly disputesTable: dynamodb.Table;
   public readonly transactionsTable: dynamodb.Table;
 
@@ -82,6 +83,13 @@ export class DataStack extends cdk.Stack {
       partitionKey: { name: 'workerId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Requesters Table
+    this.requestersTable = new dynamodb.Table(this, 'RequestersTable', {
+        partitionKey: { name: 'requesterId', type: dynamodb.AttributeType.STRING },
+        billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Disputes Table

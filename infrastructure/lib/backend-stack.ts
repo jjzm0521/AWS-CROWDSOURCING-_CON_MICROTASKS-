@@ -6,7 +6,11 @@ import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
+import * as sfnTasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import * as path from 'path';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 
 interface BackendStackProps extends cdk.StackProps {
   tasksTable: dynamodb.Table;
@@ -14,11 +18,14 @@ interface BackendStackProps extends cdk.StackProps {
   assignmentsTable: dynamodb.Table;
   walletsTable: dynamodb.Table;
   workersTable: dynamodb.Table;
+  requestersTable: dynamodb.Table;
   disputesTable: dynamodb.Table;
   transactionsTable: dynamodb.Table;
   requesterUserPool: cognito.UserPool;
   workerUserPool: cognito.UserPool;
   availableTasksQueue: sqs.Queue;
+  submissionQueue: sqs.Queue;
+  taskAssetsBucket: s3.Bucket;
 }
 
 export class BackendStack extends cdk.Stack {
@@ -51,9 +58,12 @@ export class BackendStack extends cdk.Stack {
         SUBMISSIONS_TABLE: props.submissionsTable.tableName,
         WALLETS_TABLE: props.walletsTable.tableName,
         WORKERS_TABLE: props.workersTable.tableName,
+        REQUESTERS_TABLE: props.requestersTable.tableName,
         DISPUTES_TABLE: props.disputesTable.tableName,
         TRANSACTIONS_TABLE: props.transactionsTable.tableName,
         AVAILABLE_TASKS_QUEUE_URL: props.availableTasksQueue.queueUrl,
+        SUBMISSION_QUEUE_URL: props.submissionQueue.queueUrl,
+        TASK_ASSETS_BUCKET: props.taskAssetsBucket.bucketName,
     };
 
     // --- Tasks Handlers ---
@@ -123,6 +133,7 @@ export class BackendStack extends cdk.Stack {
     props.tasksTable.grantReadWriteData(submitWorkLambda);
     props.assignmentsTable.grantReadWriteData(submitWorkLambda);
     props.submissionsTable.grantWriteData(submitWorkLambda);
+    props.submissionQueue.grantSendMessages(submitWorkLambda);
 
     // --- QC Handlers ---
 
@@ -137,18 +148,48 @@ export class BackendStack extends cdk.Stack {
     props.tasksTable.grantReadData(validateSubmissionLambda);
     props.submissionsTable.grantWriteData(validateSubmissionLambda);
 
-    // Trigger on Submissions Table Insert
-    validateSubmissionLambda.addEventSource(new lambdaEventSources.DynamoEventSource(props.submissionsTable, {
-        startingPosition: lambda.StartingPosition.TRIM_HORIZON,
-        batchSize: 5,
-        bisectBatchOnError: true,
-        retryAttempts: 2,
-        filters: [
-            lambda.FilterCriteria.filter({
-                eventName: lambda.FilterRule.isEqual('INSERT'),
-            }),
+    // AI Services Permissions
+    validateSubmissionLambda.addToRolePolicy(new iam.PolicyStatement({
+        actions: [
+            'rekognition:DetectLabels',
+            'rekognition:DetectModerationLabels',
+            'transcribe:StartTranscriptionJob',
+            'transcribe:GetTranscriptionJob',
+            'sagemaker:InvokeEndpoint',
+            'events:PutEvents'
         ],
+        resources: ['*'],
     }));
+
+    // Trigger from Submission Queue
+    validateSubmissionLambda.addEventSource(new lambdaEventSources.SqsEventSource(props.submissionQueue, {
+        batchSize: 1,
+    }));
+
+    // --- Asset Management Handlers ---
+
+    // Generate Upload URL
+    const generateUploadUrlLambda = new lambda.Function(this, 'GenerateUploadUrlLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.common.generate_upload_url.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.taskAssetsBucket.grantPut(generateUploadUrlLambda);
+
+    // --- User Management Handlers ---
+
+    // Create/Get User Profile
+    const createUserProfileLambda = new lambda.Function(this, 'CreateUserProfileLambda', {
+        runtime: lambda.Runtime.PYTHON_3_12,
+        handler: 'handlers.common.create_user_profile.handler',
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
+        environment: sharedEnv,
+    });
+
+    props.workersTable.grantReadWriteData(createUserProfileLambda);
+    props.requestersTable.grantReadWriteData(createUserProfileLambda);
 
     // --- Payment Handlers ---
 
@@ -163,6 +204,11 @@ export class BackendStack extends cdk.Stack {
     props.tasksTable.grantReadData(processPaymentLambda);
     props.walletsTable.grantReadWriteData(processPaymentLambda);
     props.transactionsTable.grantWriteData(processPaymentLambda);
+
+    processPaymentLambda.addToRolePolicy(new iam.PolicyStatement({
+        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+        resources: ['*'],
+    }));
 
     // Trigger Payment on Submissions Table Modify (Status -> Approved)
     processPaymentLambda.addEventSource(new lambdaEventSources.DynamoEventSource(props.submissionsTable, {
@@ -194,16 +240,29 @@ export class BackendStack extends cdk.Stack {
 
     // --- Disputes Handlers ---
 
+    // Step Function for Disputes
+    const disputeResolutionStateMachine = new sfn.StateMachine(this, 'DisputeResolutionStateMachine', {
+        definitionBody: sfn.DefinitionBody.fromChainable(
+            new sfn.Pass(this, 'StartDisputeProcess')
+                .next(new sfn.Succeed(this, 'DisputeResolved'))
+        ),
+        timeout: cdk.Duration.days(30),
+    });
+
     // Start Dispute (Worker)
     const startDisputeLambda = new lambda.Function(this, 'StartDisputeLambda', {
         runtime: lambda.Runtime.PYTHON_3_12,
         handler: 'handlers.disputes.start_dispute.handler',
         code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/src')),
-        environment: sharedEnv,
+        environment: {
+            ...sharedEnv,
+            DISPUTE_STATE_MACHINE_ARN: disputeResolutionStateMachine.stateMachineArn,
+        },
     });
 
     props.submissionsTable.grantReadWriteData(startDisputeLambda);
     props.disputesTable.grantWriteData(startDisputeLambda);
+    disputeResolutionStateMachine.grantStartExecution(startDisputeLambda);
 
     // Resolve Dispute (Admin)
     const resolveDisputeLambda = new lambda.Function(this, 'ResolveDisputeLambda', {
@@ -244,6 +303,20 @@ export class BackendStack extends cdk.Stack {
     requesterWalletResource.addMethod('GET', new apigateway.LambdaIntegration(getWalletLambda), {
         authorizer: requesterAuthorizer,
     });
+
+    // POST /requester/upload-url
+    const uploadUrlResource = requesterResource.addResource('upload-url');
+    uploadUrlResource.addMethod('POST', new apigateway.LambdaIntegration(generateUploadUrlLambda), {
+        authorizer: requesterAuthorizer,
+    });
+
+    // POST /users/profile (Common for both, or separate. Let's make a common resource or add to each)
+    // For simplicity, let's add a top level /users resource or just allow public access for "registration" simulation
+    // Since we are mocking login on frontend, we might want this to be open or use the authorizer if we had tokens.
+    // Let's put it under /users/profile and make it OPEN for this demo to allow "Sign Up" without Cognito Complexity
+    const usersResource = api.root.addResource('users');
+    const profileResource = usersResource.addResource('profile');
+    profileResource.addMethod('POST', new apigateway.LambdaIntegration(createUserProfileLambda)); // Public for demo "Sign In"
 
     const workerResource = api.root.addResource('worker');
     const workerTasksResource = workerResource.addResource('tasks');
@@ -290,5 +363,10 @@ export class BackendStack extends cdk.Stack {
         authorizer: requesterAuthorizer,
     });
 
+    // Output the API URL
+    new cdk.CfnOutput(this, 'ApiUrl', {
+        value: api.url,
+        description: 'The URL of the API Gateway',
+    });
   }
 }

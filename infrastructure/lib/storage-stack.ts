@@ -58,17 +58,32 @@ export class StorageStack extends cdk.Stack {
       description: 'The ID of the CloudFront distribution',
     });
 
+    // Output the Frontend Bucket Name
+    new cdk.CfnOutput(this, 'FrontendBucketName', {
+        value: this.frontendBucket.bucketName,
+        description: 'The name of the S3 bucket for the frontend',
+    });
+
     // Task Assets Bucket
     this.taskAssetsBucket = new s3.Bucket(this, 'TaskAssetsBucket', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
+      publicReadAccess: true, // Allow public read for demo purposes so workers can see images
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS, // Allow bucket policy (publicReadAccess uses bucket policy)
       cors: [
         {
-          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST],
-          allowedOrigins: ['*'], // In production, restrict this to the CloudFront domain
+          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.HEAD],
+          allowedOrigins: ['*'],
           allowedHeaders: ['*'],
+          exposedHeaders: ['ETag'],
         },
       ],
+    });
+
+    // Output Asset Bucket Name
+    new cdk.CfnOutput(this, 'TaskAssetsBucketName', {
+        value: this.taskAssetsBucket.bucketName,
+        description: 'The name of the S3 bucket for task assets',
     });
 
     // Results Exports Bucket

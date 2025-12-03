@@ -30,9 +30,12 @@ new BackendStack(app, 'CrowdsourcingBackendStack', {
   assignmentsTable: dataStack.assignmentsTable,
   walletsTable: dataStack.walletsTable,
   workersTable: dataStack.workersTable,
+  requestersTable: dataStack.requestersTable,
   disputesTable: dataStack.disputesTable,
   transactionsTable: dataStack.transactionsTable,
   requesterUserPool: authStack.requesterUserPool,
   workerUserPool: authStack.workerUserPool,
   availableTasksQueue: queueStack.availableTasksQueue,
+  submissionQueue: queueStack.submissionQueue,
+  taskAssetsBucket: storageStack.taskAssetsBucket,
 });

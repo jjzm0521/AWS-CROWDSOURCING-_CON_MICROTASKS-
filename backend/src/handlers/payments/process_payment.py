@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from backend.src.shared.config import config
 
 dynamodb = boto3.resource('dynamodb', region_name=config.AWS_REGION)
+ses = boto3.client('ses', region_name=config.AWS_REGION)
 
 def handler(event, context):
     """
@@ -111,6 +112,21 @@ def execute_payment(submission_id, task_id, worker_id):
             ]
         )
         print(f"Payment successful: {transaction_id}")
+
+        # Send Notification via SES
+        try:
+            ses.send_email(
+                Source='noreply@crowdsourcing.com',
+                Destination={'ToAddresses': ['worker@example.com']}, # Mocked email
+                Message={
+                    'Subject': {'Data': 'Payment Received'},
+                    'Body': {
+                        'Text': {'Data': f'You have received ${price} for task {task_id}.'}
+                    }
+                }
+            )
+        except Exception as e:
+            print(f"SES Error: {e}")
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'TransactionCanceledException':

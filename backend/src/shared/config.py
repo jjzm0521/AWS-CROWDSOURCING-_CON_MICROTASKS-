@@ -6,10 +6,15 @@ class Config:
     ASSIGNMENTS_TABLE = os.environ.get('ASSIGNMENTS_TABLE')
     WALLETS_TABLE = os.environ.get('WALLETS_TABLE')
     WORKERS_TABLE = os.environ.get('WORKERS_TABLE')
+    REQUESTERS_TABLE = os.environ.get('REQUESTERS_TABLE')
     DISPUTES_TABLE = os.environ.get('DISPUTES_TABLE')
     TRANSACTIONS_TABLE = os.environ.get('TRANSACTIONS_TABLE')
 
     AVAILABLE_TASKS_QUEUE_URL = os.environ.get('AVAILABLE_TASKS_QUEUE_URL')
+    SUBMISSION_QUEUE_URL = os.environ.get('SUBMISSION_QUEUE_URL')
+    DISPUTE_STATE_MACHINE_ARN = os.environ.get('DISPUTE_STATE_MACHINE_ARN')
+
+    TASK_ASSETS_BUCKET = os.environ.get('TASK_ASSETS_BUCKET')
 
     AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 
