@@ -7,6 +7,7 @@ from shared.models import SubmissionStatus
 
 # Create resource at module level (standard pattern)
 dynamodb = boto3.resource('dynamodb', region_name=config.AWS_REGION)
+sfn = boto3.client('stepfunctions', region_name=config.AWS_REGION)
 
 def handler(event, context):
     """
@@ -75,6 +76,18 @@ def handler(event, context):
                     }
                 ]
             )
+
+            # Trigger Step Function
+            sfn_arn = config.DISPUTE_STATE_MACHINE_ARN
+            if sfn_arn:
+                try:
+                    sfn.start_execution(
+                        stateMachineArn=sfn_arn,
+                        name=dispute_id,
+                        input=json.dumps({'disputeId': dispute_id, 'submissionId': submission_id})
+                    )
+                except Exception as ex:
+                    print(f"Failed to start step function: {ex}")
 
             return {
                 "statusCode": 201,

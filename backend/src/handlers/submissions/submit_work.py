@@ -8,6 +8,7 @@ from backend.src.shared.config import config
 from backend.src.shared.models import TaskStatus, SubmissionStatus
 
 dynamodb = boto3.resource('dynamodb', region_name=config.AWS_REGION)
+sqs = boto3.client('sqs', region_name=config.AWS_REGION)
 
 def handler(event, context):
     """
@@ -153,6 +154,18 @@ def handler(event, context):
                     }
                 ]
             )
+
+            if config.SUBMISSION_QUEUE_URL:
+                sqs.send_message(
+                    QueueUrl=config.SUBMISSION_QUEUE_URL,
+                    MessageBody=json.dumps({
+                        'submissionId': submission_id,
+                        'taskId': task_id,
+                        'workerId': worker_id,
+                        'assignmentId': assignment_id,
+                        'answer': answer
+                    })
+                )
 
             return {
                 "statusCode": 200,

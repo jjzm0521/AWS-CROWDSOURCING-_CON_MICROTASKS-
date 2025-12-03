@@ -5,6 +5,8 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 export class QueueStack extends cdk.Stack {
   public readonly availableTasksQueue: sqs.Queue;
   public readonly availableTasksDlq: sqs.Queue;
+  public readonly submissionQueue: sqs.Queue;
+  public readonly submissionDlq: sqs.Queue;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -20,6 +22,22 @@ export class QueueStack extends cdk.Stack {
       visibilityTimeout: cdk.Duration.seconds(300), // Match lambda timeout usually
       deadLetterQueue: {
         queue: this.availableTasksDlq,
+        maxReceiveCount: 3,
+      },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Submission DLQ
+    this.submissionDlq = new sqs.Queue(this, 'SubmissionDLQ', {
+      retentionPeriod: cdk.Duration.days(14),
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Submission Queue
+    this.submissionQueue = new sqs.Queue(this, 'SubmissionQueue', {
+      visibilityTimeout: cdk.Duration.seconds(300),
+      deadLetterQueue: {
+        queue: this.submissionDlq,
         maxReceiveCount: 3,
       },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
