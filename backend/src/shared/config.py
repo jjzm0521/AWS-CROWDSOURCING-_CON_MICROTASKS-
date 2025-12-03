@@ -10,6 +10,8 @@ class Config:
     TRANSACTIONS_TABLE = os.environ.get('TRANSACTIONS_TABLE')
 
     AVAILABLE_TASKS_QUEUE_URL = os.environ.get('AVAILABLE_TASKS_QUEUE_URL')
+    SUBMISSION_QUEUE_URL = os.environ.get('SUBMISSION_QUEUE_URL')
+    DISPUTE_STATE_MACHINE_ARN = os.environ.get('DISPUTE_STATE_MACHINE_ARN')
 
     AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 
