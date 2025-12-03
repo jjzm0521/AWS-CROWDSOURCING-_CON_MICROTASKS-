@@ -58,6 +58,12 @@ export class StorageStack extends cdk.Stack {
       description: 'The ID of the CloudFront distribution',
     });
 
+    // Output the Frontend Bucket Name
+    new cdk.CfnOutput(this, 'FrontendBucketName', {
+        value: this.frontendBucket.bucketName,
+        description: 'The name of the S3 bucket for the frontend',
+    });
+
     // Task Assets Bucket
     this.taskAssetsBucket = new s3.Bucket(this, 'TaskAssetsBucket', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
